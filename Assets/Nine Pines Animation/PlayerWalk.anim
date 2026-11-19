@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: PlayerWals
+  m_Name: PlayerWalk
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
@@ -1377,4 +1377,18 @@ AnimationClip:
     flags: 0
   m_HasGenericRootTransform: 0
   m_HasMotionFloatCurves: 0
-  m_Events: []
+  m_Events:
+  - time: 0.06666667
+    functionName: RightFootStep
+    data: 
+    objectReferenceParameter: {fileID: 8300000, guid: d541c5fdc7d23ac4db3464c21cce75d7, type: 3}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 0.31666666
+    functionName: LeftFootStep
+    data: 
+    objectReferenceParameter: {fileID: 8300000, guid: b7b874079e6977541a49d7d5acae33ab, type: 3}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0

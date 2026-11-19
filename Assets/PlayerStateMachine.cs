@@ -1,13 +1,22 @@
 using NUnit.Framework.Api;
+using System.Collections;
 using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerStateMachine : MonoBehaviour
 {
+
     public CinemachineCamera redCam, greenCam, blueCam;
     public float speed = 5f;
+    public float jumpForce = 20f;
+    public float absoluteMaxSpeed = 6f;
     public float mouseSpeed = 2f;
+    public bool sprint;
+    public GameObject footStepParticles;
+    GameObject leftFootPart, rightFootPart;
+    public GameObject leftFoot, rightFoot;
+
     //our data-validated enum
     public enum playerState
     {
@@ -23,8 +32,10 @@ public class PlayerStateMachine : MonoBehaviour
     MeshRenderer myMesh;
     Material myMat;
     Rigidbody myRB;
+    AudioSource myAudio;
 
     bool moving;
+    public bool jump, canJump, grounded;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -34,28 +45,48 @@ public class PlayerStateMachine : MonoBehaviour
         myRB = GetComponent<Rigidbody>();
         myMesh = GetComponent<MeshRenderer>();
         myMat = myMesh.material;
+        TryGetComponent<AudioSource>(out myAudio);
+        myRB.maxLinearVelocity = absoluteMaxSpeed;
+        canJump = true;
+
+        leftFootPart = Instantiate(footStepParticles, Vector3.zero, Quaternion.identity);
+        rightFootPart = Instantiate(footStepParticles, Vector3.zero, Quaternion.identity);
+        leftFootPart.SetActive(false);
+        rightFootPart.SetActive(false);
     }
 
     // Update is called once per frame
     void Update()
     {
 
+        if(Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed)
+        {
+            sprint = true;
+        }
+        else { sprint = false; }
+
+        if (Keyboard.current.spaceKey.isPressed && grounded && canJump)
+        {
+            jump = true;
+        }
+        else { jump = false; }
+
         switch(myState)
         {
             case playerState.BLUE:
-                Debug.Log("blue");
+                //Debug.Log("blue");
                 myMat.color = Color.blue;
                 blueCam.Prioritize();
                 return;
 
             case playerState.RED:
-                Debug.Log("red");
+                //Debug.Log("red");
                 myMat.color = Color.red;
                 redCam.Prioritize();
                 return;
 
             case playerState.GREEN:
-                Debug.Log("green");
+                //Debug.Log("green");
                 myMat.color = Color.green;
                 greenCam.Prioritize();
                 return;
@@ -87,15 +118,18 @@ public class PlayerStateMachine : MonoBehaviour
         {
             dir += Vector3.back;
         }
-        Debug.Log("local dir: " + dir);
         dir = dir.normalized * speed * Time.fixedDeltaTime;
+        if(sprint) { dir *= 2f; }
         dir = transform.TransformDirection(dir);
 
         Debug.DrawRay(transform.position, dir, Color.magenta);
-        Debug.Log("world dir: " + dir);
 
-        myRB.linearVelocity = dir;
+        myRB.AddForce(dir);
 
+        if(jump) 
+        {
+            StartCoroutine(jumpRequest(.25f));
+        }
 
 
         Vector2 mouseOffset = Mouse.current.delta.value;
@@ -104,8 +138,80 @@ public class PlayerStateMachine : MonoBehaviour
 
         if(dir != Vector3.zero) { moving = true; }
         else { moving = false; }
+
         myAnim.SetBool("moving", moving);
+        myAnim.SetFloat("speed", myRB.linearVelocity.magnitude);
 
 
+    }
+
+    public void EnterDriving()
+    {
+        //check a bunch of conditions to see if we have entered the driver seat of a car
+        //if they all return true
+        myState = playerState.GREEN;
+    }
+
+    public void LeftFootStep(AudioClip c)
+    {
+        Debug.Log("left foot stepped");
+        if (myAudio != null)
+        {
+            myAudio.PlayOneShot(c);
+        }
+        leftFootPart.SetActive(false);
+        leftFootPart.transform.position = leftFoot.transform.position;
+        leftFootPart.SetActive(true);
+    }
+
+    public void RightFootStep(AudioClip c)
+    {
+        Debug.Log("right foot stepped");
+        if(myAudio != null)
+        {
+            myAudio.PlayOneShot(c);
+        }
+        rightFootPart.SetActive(false);
+        rightFootPart.transform.position = rightFoot.transform.position;
+        rightFootPart.SetActive(true);
+    }
+
+
+    public void OnCollisionStay(Collision collision)
+    {
+        grounded = true;
+    }
+
+    public void OnCollisionExit(Collision collision)
+    {
+        grounded = false;
+    }
+
+
+    IEnumerator jumpRequest(float time)
+    {
+        canJump = false;
+        jump = false;
+
+        Debug.Log("jump fired off on frame: " + Time.frameCount);
+
+        myRB.AddForce(Vector3.up * jumpForce);
+        myAnim.SetTrigger("jump");
+
+        //code above this line runs as soon as you execute the coroutine
+        yield return new WaitForSeconds(time);
+        //code below this line runs once TIME seconds have passed
+        canJump = true;
+    }
+
+
+    IEnumerator badCoroutine()
+    {
+        while(true)
+        {
+            //code here will run every fixed update frame
+            yield return new WaitForFixedUpdate();
+            //and then wait for the next one
+        }
     }
 }
