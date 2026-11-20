@@ -123,11 +123,11 @@ public class PlayerStateMachine : MonoBehaviour
         dir = transform.TransformDirection(dir);
 
         Debug.DrawRay(transform.position, dir, Color.magenta);
-
-        myRB.AddForce(dir);
+        myRB.linearVelocity = dir;
 
         if(jump) 
         {
+            //this forces a .25 second wait between jump requests
             StartCoroutine(jumpRequest(.25f));
         }
 
@@ -143,13 +143,6 @@ public class PlayerStateMachine : MonoBehaviour
         myAnim.SetFloat("speed", myRB.linearVelocity.magnitude);
 
 
-    }
-
-    public void EnterDriving()
-    {
-        //check a bunch of conditions to see if we have entered the driver seat of a car
-        //if they all return true
-        myState = playerState.GREEN;
     }
 
     public void LeftFootStep(AudioClip c)
@@ -187,7 +180,7 @@ public class PlayerStateMachine : MonoBehaviour
         grounded = false;
     }
 
-
+    //this lets us buffer jump requests to avoid double inputs
     IEnumerator jumpRequest(float time)
     {
         canJump = false;
@@ -200,6 +193,7 @@ public class PlayerStateMachine : MonoBehaviour
 
         //code above this line runs as soon as you execute the coroutine
         yield return new WaitForSeconds(time);
+
         //code below this line runs once TIME seconds have passed
         canJump = true;
     }
@@ -207,6 +201,7 @@ public class PlayerStateMachine : MonoBehaviour
 
     IEnumerator badCoroutine()
     {
+        //while loop can never exit "true" so it runs forever
         while(true)
         {
             //code here will run every fixed update frame
